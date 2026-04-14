@@ -64,7 +64,7 @@ pipeline {
                 sh '''
                 docker stop backend || true
                 docker rm backend || true
-                docker run -d -p 8080:8080 --name backend $DOCKER_HUB_REPO_BACKEND:latest
+                docker run -d -p 8081:8080 --name backend $DOCKER_HUB_REPO_BACKEND:latest
 
                 docker stop frontend || true
                 docker rm frontend || true
