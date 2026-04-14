@@ -1,13 +1,18 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven'
+    }
+
     environment {
         DOCKER_HUB_REPO_BACKEND = "reshma0209/backend-app"
         DOCKER_HUB_REPO_FRONTEND = "reshma0209/frontend-app"
-        IMAGE_TAG = "latest"
+        IMAGE_TAG = "${BUILD_NUMBER}"   // ✅ dynamic tag
     }
 
     stages {
+
         stage('Build Backend') {
             steps {
                 dir('Online Banking App Spring Boot') {
@@ -19,7 +24,10 @@ pipeline {
         stage('Build Backend Docker Image') {
             steps {
                 dir('Online Banking App Spring Boot') {
-                    sh 'docker build -t $DOCKER_HUB_REPO_BACKEND:$IMAGE_TAG .'
+                    sh '''
+                    docker build -t $DOCKER_HUB_REPO_BACKEND:$IMAGE_TAG .
+                    docker tag $DOCKER_HUB_REPO_BACKEND:$IMAGE_TAG $DOCKER_HUB_REPO_BACKEND:latest
+                    '''
                 }
             }
         }
@@ -27,7 +35,10 @@ pipeline {
         stage('Build Frontend Docker Image') {
             steps {
                 dir('demo-bank-redux') {
-                    sh 'docker build -t $DOCKER_HUB_REPO_FRONTEND:$IMAGE_TAG .'
+                    sh '''
+                    docker build -t $DOCKER_HUB_REPO_FRONTEND:$IMAGE_TAG .
+                    docker tag $DOCKER_HUB_REPO_FRONTEND:$IMAGE_TAG $DOCKER_HUB_REPO_FRONTEND:latest
+                    '''
                 }
             }
         }
@@ -35,9 +46,15 @@ pipeline {
         stage('Push Images to DockerHub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
-                    sh 'docker push $DOCKER_HUB_REPO_BACKEND:$IMAGE_TAG'
-                    sh 'docker push $DOCKER_HUB_REPO_FRONTEND:$IMAGE_TAG'
+                    sh '''
+                    echo $PASS | docker login -u $USER --password-stdin
+
+                    docker push $DOCKER_HUB_REPO_BACKEND:$IMAGE_TAG
+                    docker push $DOCKER_HUB_REPO_BACKEND:latest
+
+                    docker push $DOCKER_HUB_REPO_FRONTEND:$IMAGE_TAG
+                    docker push $DOCKER_HUB_REPO_FRONTEND:latest
+                    '''
                 }
             }
         }
@@ -47,11 +64,11 @@ pipeline {
                 sh '''
                 docker stop backend || true
                 docker rm backend || true
-                docker run -d -p 8080:8080 --name backend reshma0209/backend-app:latest
+                docker run -d -p 8080:8080 --name backend $DOCKER_HUB_REPO_BACKEND:latest
 
                 docker stop frontend || true
                 docker rm frontend || true
-                docker run -d -p 3000:80 --name frontend reshma0209/frontend-app:latest
+                docker run -d -p 3000:80 --name frontend $DOCKER_HUB_REPO_FRONTEND:latest
                 '''
             }
         }
