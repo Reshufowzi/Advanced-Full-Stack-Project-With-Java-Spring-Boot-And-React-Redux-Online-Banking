@@ -8,13 +8,6 @@ pipeline {
     }
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO.git'
-            }
-        }
-
         stage('Build Backend') {
             steps {
                 dir('Online Banking App Spring Boot') {
